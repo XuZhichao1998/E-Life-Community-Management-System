@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>用户查看投诉信息</title>
+    <link th:href="@{/layui/css/layui.css}" rel="stylesheet"/>
+    <script th:src="@{/layui/layui.js}"></script>
+</head>
+<body>
+<p>
+    <a th:href="@{/to_index_user}">返回用户界面</a>
+
+</p>
+    <div style="text-align: center">
+        <h1>投诉列表</h1>
+
+        <br/>
+        <div class="demoTable">
+            搜索投诉号：
+            <div class="layui-inline">
+                <input class="layui-input" name="searchComplaintId" id="searchComplaintId" autocomplete="off">
+            </div>
+            <button class="layui-btn" data-type="reload">搜索</button>
+			<button class="layui-btn" id="add" onclick="toSave()">新增</button>
+        </div>
+
+        <!--class="layui-hide"-->
+        <table  id="test" lay-filter="test" style="margin: 0 auto;text-align: center"></table>
+        <!--操作列-->
+        <script type="text/html" id="action">
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="detail">查看</a>
+			<!--
+            <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+			-->
+            <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">撤回投诉</a>
+        </script>
+
+    </div>
+    <script>
+        function toSave() {
+
+            layer.open({  //用户提交(新增)投诉
+                type: 2,
+                title:"添加投诉"
+                ,area: ['700px', '500px']
+                ,id: 'toAdd' //防止重复弹出
+                ,content: "/toU_Complaint"
+                //,btn: ['确认', '取消']
+                ,btnAlign: 'c' //按钮居中
+                ,shade: 0.1 //不显示遮罩
+                ,yes: function(){
+                    layer.closeAll();
+                },
+                success: function(layero, index){
+                    console.log(layero, index);
+                }
+            });
+        }
+        layui.use('table', function(){
+            var table = layui.table;
+            table.render({
+                elem: '#test'
+                ,url:'/getU_ComplaintList'   /*url应该和RequestMapping(中的接口方法名称一致)*/
+                ,page: true
+                ,id: 'testReload'
+                ,width:1100
+                ,cols: [
+                    [
+                        {field:'complaintId', width:120, title: '投诉编号',align: 'center'},
+                        {field:'complaintUserId', width:120, title: '投诉者用户名',align: 'center'},
+                        {field:'complaintType', width:120, title: '投诉类型',align: 'center'},
+						{field:'complaintMessage', width:120, title: '投诉内容',align: 'center'},
+						{field:'phoneNumber', width:120, title: '联系方式',align: 'center'},
+						{field:'complaintDate', width:120, title: '投诉日期',align: 'center'},
+						{field:'complaintState', width:120, title: '投诉状态',align: 'center'},
+                        {field:'', title: '操作', align: 'center',width:210,toolbar:"#action"}
+                    ]
+                ]
+            });
+
+            /*重新加载数据表格*/
+            var $ = layui.$, active = {
+                reload: function(){
+                    var seaName = $('#searchComplaintId');
+                   
+                    table.reload('testReload', {
+                        where: {
+                            complaintId: seaName.val(),
+                            
+                        }
+                    });
+                }
+            };
+
+            /*绑定搜索点击事件*/
+            $('.demoTable .layui-btn').on('click', function(){
+                var type = $(this).data('type');
+                active[type] ? active[type].call(this) : '';
+            });
+            //监听工具条
+            table.on('tool(test)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'detail'){
+                    layer.open({
+                        type: 2,
+                        title:"查看详情"
+                        ,area: ['700px', '500px']
+                        ,id: 'toDetail' //防止重复弹出
+                        ,content: "/toComplaintDetail?complaintId="+data.complaintId
+                        ,btnAlign: 'c' //按钮居中
+                        ,shade: 0.1 //不显示遮罩
+                        ,yes: function() {
+                            layer.closeAll();
+                        },
+                        success: function(layero, index){
+                            console.log(layero, index);
+                        }
+                    });
+                } else if(obj.event === 'del'){
+                    layer.confirm('真的要撤回么', function(index){
+                        //console.log(data);
+                        $.ajax({
+                            url: "/deleteComplaint",
+                            type: "POST",
+                            data:{"complaintId":data.complaintId},
+                            dataType: "json",
+                            success: function(data){
+                                if(data==1){
+                                    layer.msg("撤回投诉成功", {icon: 6});
+                                    /*重新加载数据表格*/
+                                    var seaName = $('#searchComplaintId');
+                                    table.reload('testReload', {
+                                        where: {
+                                            complaintId: seaName.val()
+                                        }
+                                    });
+                                }else{
+                                    layer.msg("撤回投诉失败", {icon: 5});
+                                }
+                            }
+
+                        });
+                    });
+                } else if(obj.event === 'edit'){ //没有接口，用户不能修改已经提交的投诉，只能撤回
+                    layer.open({
+                        type: 2,
+                        title:"修改投诉信息"
+                        ,area: ['700px', '500px']
+                        ,id: 'toUpdate' //防止重复弹出
+                        ,content: "/toUpdateComplaint?complaintId="+data.complaintId
+                        //,btn: ['确认', '取消']
+                        ,btnAlign: 'c' //按钮居中
+                        ,shade: 0.1 //不显示遮罩
+                        ,yes: function(){
+                            layer.closeAll();
+                        },
+                        success: function(layero, index){
+                            console.log(layero, index);
+                        }
+                    });
+
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>物流信息管理</title>
+    <link th:href="@{/layui/css/layui.css}" rel="stylesheet"/>
+    <script th:src="@{/layui/layui.js}"></script>
+</head>
+<body>
+<p>
+    <a th:href="@{/to_index_user}">返回用户主界面</a>
+
+</p>
+    <div style="text-align: center">
+        <h1>物流信息列表</h1>
+
+        <br/>
+        <div class="demoTable">
+            搜索编号：
+            <div class="layui-inline">
+                <input class="layui-input" name="searchLogisticId" id="searchLogisticId" autocomplete="off">
+            </div>
+            <button class="layui-btn" data-type="reload">搜索</button>
+            <button class="layui-btn" id="add" onclick="toSave()">新增</button>
+        </div>
+
+        <!--class="layui-hide"-->
+        <table  id="test" lay-filter="test" style="margin: 0 auto;text-align: center"></table>
+        <!--操作列-->
+        <script type="text/html" id="action">
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="detail">查看</a>
+            <!--<a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+            <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+			-->
+        </script>
+
+    </div>
+    <script>
+        function toSave() {
+
+            layer.open({
+                type: 2,
+                title:"添加物流订单"
+                ,area: ['700px', '500px']
+                ,id: 'toAdd' //防止重复弹出
+                ,content: "/toU_Logistic"
+                //,btn: ['确认', '取消']
+                ,btnAlign: 'c' //按钮居中
+                ,shade: 0.1 //不显示遮罩
+                ,yes: function(){
+                    layer.closeAll();
+                },
+                success: function(layero, index){
+                    console.log(layero, index);
+                }
+            });
+        }
+        layui.use('table', function(){
+            var table = layui.table;
+            table.render({
+                elem: '#test'
+                ,url:'/getU_LogisticList'   /*url应该和RequestMapping(中的接口方法名称一致)*/
+                ,page: true
+                ,id: 'testReload'
+                ,width:1500
+                ,cols: [
+                    [
+                        {field:'logisticId', width:80, title: '物流编号',align: 'center'},
+                        {field:'logisticOrderId', width:120, title: '物流单号',align: 'center'},
+                        {field:'userId', width:80, title: '下单用户',align: 'center'},
+						{field:'logisticSubmitDate', width:120, title: '下单时间',align: 'center'},
+						{field:'senderName', width:120, title: '寄件人姓名',align: 'center'},
+						//{field:'logisticType', width:120, title: '寄件类型',align: 'center'},
+						//{field:'senderPhoneNumber', width:120, title: '寄件人手机号',align: 'center'},
+						//{field:'senderProvince', width:120, title: '寄件人所在省',align: 'center'},
+						{field:'senderCity', width:120, title: '寄件人所在市',align: 'center'},
+						//{field:'senderDistrict', width:120, title: '寄件人所在区',align: 'center'},
+						//{field:'senderPostalCode', width:120, title: '寄件人邮政编码',align: 'center'},
+						//{field:'senderDetailedAddress', width:120, title: '寄件人详细地址',align: 'center'},
+						{field:'receiverName', width:120, title: '收件人姓名',align: 'center'},
+						//{field:'receiverPhoneNumber', width:120, title: '收件人手机号',align: 'center'},
+						//{field:'receiverProvince', width:120, title: '收件人所在省',align: 'center'},
+						{field:'receiverCity', width:120, title: '收件人所在市',align: 'center'},
+						//{field:'receiverDistrict', width:120, title: '收件人所在区',align: 'center'},
+						//{field:'receiverPostalCode', width:120, title: '收件人邮政编码',align: 'center'},
+						//{field:'receiverDetailedAddress', width:120, title: '收件人详细地址',align: 'center'},
+						{field:'logisticMoney', width:120, title: '寄件费用',align: 'center'},
+						//{field:'courierId', width:120, title: '快递员号',align: 'center'},
+						{field:'logisticLastState', width:120, title: '最新状态',align: 'center'},
+						//{field:'logisticLastUpdatetime', width:120, title: '状态最后更新时间',align: 'center'},
+						{field:'logisticFinish', width:120, title: '是否已经成功接收',align: 'center'},
+                        {field:'', title: '操作', align: 'center',width:210,toolbar:"#action"}
+                    ]
+                ]
+            });
+
+            /*重新加载数据表格*/
+            var $ = layui.$, active = {
+                reload: function(){
+                    var seaName = $('#searchLogisticId');
+                    table.reload('testReload', {
+                        where: {
+							logisticId: seaName.val(),
+        
+                        }
+                    });
+                }
+            };
+
+            /*绑定搜索点击事件*/
+            $('.demoTable .layui-btn').on('click', function(){
+                var type = $(this).data('type');
+                active[type] ? active[type].call(this) : '';
+            });
+            //监听工具条
+            table.on('tool(test)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'detail'){
+                    layer.open({
+                        type: 2,
+                        title:"查看详情"
+                        ,area: ['700px', '500px']
+                        ,id: 'toDetail' //防止重复弹出
+                        ,content: "/toLogisticDetail?logisticId="+data.logisticId
+                        ,btnAlign: 'c' //按钮居中
+                        ,shade: 0.1 //不显示遮罩
+                        ,yes: function(){
+                            layer.closeAll();
+                        },
+                        success: function(layero, index){
+                            console.log(layero, index);
+                        }
+                    });
+                } else if(obj.event === 'del'){ //这个删除了接口，用户点不进去，不必修改
+                    layer.confirm('真的删除行么', function(index){
+                        //console.log(data);
+                        $.ajax({
+                            url: "/deleteLogistic",
+                            type: "POST",
+                            data:{"logisticId":data.logisticId},
+                            dataType: "json",
+                            success: function(data){
+                                if(data==1){
+                                    layer.msg("删除成功", {icon: 6});
+                                    /*重新加载数据表格*/
+                                  
+                                    var seaName = $('#searchLogisticId');
+                                 
+                                    table.reload('testReload', {
+                                        where: { 
+                                            paymentId: seaName.val()
+                                        }
+                                    });
+                                }else{
+                                    layer.msg("删除失败", {icon: 5});
+                                }
+                            }
+
+                        });
+                    });
+                } else if(obj.event === 'edit'){ //这个接口也删除了
+                    layer.open({
+                        type: 2,
+                        title:"修改物流信息"
+                        ,area: ['700px', '500px']
+                        ,id: 'toUpdate' //防止重复弹出
+                        ,content: "/toUpdateLogistic?logisticId="+data.logisticId
+                        //,btn: ['确认', '取消']
+                        ,btnAlign: 'c' //按钮居中
+                        ,shade: 0.1 //不显示遮罩
+                        ,yes: function(){
+                            layer.closeAll();
+                        },
+                        success: function(layero, index){
+                            console.log(layero, index);
+                        }
+                    });
+
+                }
+            });
+        });
+    </script>
+</body>
+</html>

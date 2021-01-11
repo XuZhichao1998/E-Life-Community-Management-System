@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>用户信息管理</title>
+    <link th:href="@{/layui/css/layui.css}" rel="stylesheet"/>
+    <script th:src="@{/layui/layui.js}"></script>
+</head>
+<body>
+<p>
+    <a th:href="@{/to_index_admin}">返回管理员主界面</a>
+</p>
+    <div style="text-align: center">
+        <h1>用户列表</h1>
+
+        <br/>
+        <div class="demoTable">
+            搜索昵称：
+            <div class="layui-inline">
+                <input class="layui-input" name="searchName" id="searchName" autocomplete="off">
+            </div>
+            <button class="layui-btn" data-type="reload">搜索</button>
+            <button class="layui-btn" id="add" onclick="toSave()">新增</button>
+        </div>
+
+        <!--class="layui-hide"-->
+        <table  id="test" lay-filter="test" style="margin: 0 auto;text-align: center"></table>
+        <!--操作列-->
+        <script type="text/html" id="action">
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="detail">查看</a>
+            <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+            <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+        </script>
+
+    </div>
+    <script>
+        function toSave() {
+
+            layer.open({
+                type: 2,
+                title:"新增用户"
+                ,area: ['700px', '500px']
+                ,id: 'toAdd' //防止重复弹出
+                ,content: "/toUserInfo"
+                //,btn: ['确认', '取消']
+                ,btnAlign: 'c' //按钮居中
+                ,shade: 0.1 //不显示遮罩
+                ,yes: function(){
+                    layer.closeAll();
+                },
+                success: function(layero, index){
+                    console.log(layero, index);
+                }
+            });
+        }
+        layui.use('table', function(){
+            var table = layui.table;
+            table.render({
+                elem: '#test'
+                ,url:'/getUserInfoList'   /*url应该和RequestMapping(中的接口方法名称一致)*/
+                ,page: true
+                ,id: 'testReload'
+                ,width:1100
+                ,cols: [
+                    [
+                        {field:'userId', width:120, title: '昵称',align: 'center'},
+                        {field:'userName', width:120, title: '姓名',align: 'center'},
+                        {field:'userSex', width:80, title: '性别',align: 'center'},
+						{field:'userPhoneNumber', width:120, title: '手机号',align: 'center'},
+						{field:'userEmail', width:120, title: '邮箱',align: 'center'},
+						{field:'userPassword', width:120, title: '密码',align: 'center'},
+						{field:'userIdentityNumber', width:120, title: '身份证号',align: 'center'},
+						{field:'householdId', width:80, title: '住户号',align: 'center'},
+                        {field:'', title: '操作', align: 'center',width:240,toolbar:"#action"}
+                    ]
+                ]
+            });
+
+            /*重新加载数据表格*/
+            var $ = layui.$, active = {
+                reload: function(){
+                    var seaName = $('#searchName');
+                   
+                    table.reload('testReload', {
+                        where: {
+                            userId: seaName.val(),
+                            
+                        }
+                    });
+                }
+            };
+
+            /*绑定搜索点击事件*/
+            $('.demoTable .layui-btn').on('click', function(){
+                var type = $(this).data('type');
+                active[type] ? active[type].call(this) : '';
+            });
+            //监听工具条
+            table.on('tool(test)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'detail'){
+                    layer.open({
+                        type: 2,
+                        title:"查看详情"
+                        ,area: ['700px', '500px']
+                        ,id: 'toDetail' //防止重复弹出
+                        ,content: "/toUserInfoDetail?userId="+data.userId 
+                        ,btnAlign: 'c' //按钮居中
+                        ,shade: 0.1 //不显示遮罩
+                        ,yes: function(){
+                            layer.closeAll();
+                        },
+                        success: function(layero, index){
+                            console.log(layero, index);
+                        }
+                    });
+                } else if(obj.event === 'del'){
+                    layer.confirm('真的删除行么', function(index){
+                        //console.log(data);
+                        $.ajax({
+                            url: "/deleteUserInfo",
+                            type: "POST",
+                            data:{"userId":data.userId},
+                            dataType: "json",
+                            success: function(data){
+                                if(data==1){
+                                    layer.msg("删除成功", {icon: 6});
+                                    /*重新加载数据表格*/
+                                    var seaName = $('#searchName');
+                                    table.reload('testReload', {
+                                        where: {
+                                            userId: seaName.val()
+                                        }
+                                    });
+                                }else{
+                                    layer.msg("删除失败", {icon: 5});
+                                }
+                            }
+
+                        });
+                    });
+                } else if(obj.event === 'edit'){
+                    layer.open({
+                        type: 2,
+                        title:"修改用户信息"
+                        ,area: ['700px', '500px']
+                        ,id: 'toUpdate' //防止重复弹出
+                        ,content: "/toUpdateUserInfo?userId="+data.userId
+                        //,btn: ['确认', '取消']
+                        ,btnAlign: 'c' //按钮居中
+                        ,shade: 0.1 //不显示遮罩
+                        ,yes: function(){
+                            layer.closeAll();
+                        },
+                        success: function(layero, index){
+                            console.log(layero, index);
+                        }
+                    });
+
+                }
+            });
+        });
+    </script>
+</body>
+</html>
